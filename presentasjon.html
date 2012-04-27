@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+
+<!--
+  Google HTML5 slide template
+
+  Authors: Luke Mah? (code)
+           Marcin Wichary (code and design)
+
+           Dominic Mazzoni (browser compatibility)
+           Charles Chen (ChromeVox support)
+
+  URL: http://code.google.com/p/html5slides/
+-->
+
+
+	
+<!-- IDEER 
+
+	Browsere som vil snakke sammen
+	STOP-skilt med kryss over T
+	
+	CORS
+		proxy
+		jsonp
+		document.domain
+		window.name
+		frameelement transport
+		fragment identifier messaging
+		flash - crossdomain.xml
+		silverlight - clientaccesspolicy.xml
+		java - crossdomain.xml
+		postMessage
+		XDomainRequest
+		Cross domain XHR
+	
+	CSP - typer
+		report-only
+		repot-uri
+	
+	Matrise (IE, FF, Chrome, Opera, Safari):
+		X-frame-options - sameorigin, deny, allow-from
+		CSP
+		hsts
+		X-no-sniff
+		(secure httponly)
+		xss-filter
+		x-access-control-allow-origin
+		sandbox - allow-scripts, allow-forms, allow-top-navigation, allow-same-origin
+
+
+	Demo
+		exploits i qwitter
+			CSRF
+			CSP-beskyttelse mot injectede script - peke på hva som ofte skjer lizamoon osv. java-exploits...
+		
+
+-->
+
+
+
+
+<html>
+  <head>
+    <title>Presentation</title>
+
+    <meta charset='utf-8'>
+    <script src='slides.js'></script>
+	<script src='jquery-1.7.1.min.js'></script>
+	
+	<style>
+		q.small {
+			font-size: 90%;
+		}
+		.bottom-left-picture {
+			background-repeat: no-repeat; background-position: left bottom;
+		}
+		.bottom-right-picture {
+			background-repeat: no-repeat; background-position: right bottom;		
+		}
+		.center-picture {
+			background-repeat: no-repeat; background-position: center center;		
+		}
+		.center-left-picture {
+			background-repeat: no-repeat; background-position: left center;		
+		}
+		.danger {
+			color: red;
+		}
+		.bottom-right {
+			position: absolute;
+			bottom: 10px;
+			right: 10px;
+		}
+		pre.inbetween  {
+			margin: 10px 0px 10px 0px;
+		}
+		article.contrast {
+			color: #B9B9B9 !important;
+			background-color: #1B1B1B  !important;  
+		}
+		article.contrast h1, article.contrast h2, article.contrast h3 {
+			color: #fff  !important;
+		}
+		ul ul:first-child {
+			margin-top: 10px;
+		}
+		a {
+			text-decoration: none;
+		}
+		ul.plus {
+			list-style-image: url('images/plus_16.png');
+		}
+		ul.plus li::before, ul.minus li::before, ul.important li::before {
+			content: '';
+		}
+		
+		ul.minus {
+			list-style-image: url('images/minus_16.png');
+		}
+		ul.important {
+			list-style-image: url('images/important.gif');
+		}
+		ul.sub li::before {
+			content: '-';
+		}
+
+		
+		.talkFrame {
+			margin: 0;
+			font-family: monospace;
+			font-size: 12pt;
+		}
+		.talkFrame.floating {
+			z-index: 20;
+			top: 120px;
+			position: absolute;
+		}
+		.talkFrame.right {
+			right: 60px;
+		}
+		.talkFrame.left {
+			left: 60px;
+		}
+		.talkFrame.floating .fakeFrame {
+			width: 350px;
+		}
+		.fakeFrame {
+			min-height: 200px;
+			border: 2px inset;
+			padding: 5px;
+			font-size: 12pt;
+		}
+		.source {
+			padding-right: 10px !important;
+		}
+		pre.lessFuzz {
+			font-size: 90%;
+			letter-spacing: 0;
+			line-height: 1.5em;
+			margin-top: 0;
+			margin-bottom: 0;
+			border: none;
+			box-shadow: none;
+			background: none;
+			padding: 0px;
+		}
+		.communication {
+			margin-top: 10px;
+			font-family: monospace;
+		}
+		.communication pre {
+			margin-top: 4px;
+		}
+		.communication .server {
+			text-align: right;
+		}
+		.communication .server pre {
+			text-align: left;
+		}
+
+		.headers code {
+			font-size: 70%;
+			color: #777;
+		}
+		.warn, .warn code {
+			color: #a00;
+		}
+		.graph, .graph td {
+			border: none;
+			font-size: 80%;
+			line-height:20px;
+		}
+		.graph td div{
+			float: left;
+			height: 20px;
+		}
+		.graph td img {
+			margin-top: -15px;
+		}
+		.green {
+			background: #1b1;
+		}
+		.red {
+			background: #b11;
+			margin-right: 5px;
+		}
+
+		pre.evil {
+			background: #FAA;
+		}
+	</style>
+	<script>
+	$(function() {
+		$(".urlize").each(function(i, e) {
+			var link = $(e).text();
+			$(e).html("").append($("<a>").text(link).attr("href", link));
+		});
+	});
+	</script>
+
+
+
+	
+  </head>
+
+  <body style='display: none'>
+
+    <section class='slides layout-regular template-bekk'>
+
+      <article class="contrast">
+        <h1>
+          Cross Domain and Browser Security
+        </h1>
+        <p>
+          Erlend Oftedal
+          &mdash;
+          <a href="http://twitter.com/webtonull">@webtonull</a>
+          <br>
+          OWASP Göteborg
+        </p>
+        <img src="images/logo-owasp.gif	" class="bottom-right" style="margin: 10px; padding: 10px; background: #fff; border-radius: 10px;" />
+      </article>	  
+
+	  <article>
+		<h3>Who am I?</h3>
+		<img src="images/erlend.jpg" style="position: absolute; bottom: 2.5em; right: 1em; " />
+		<ul class="build">
+			<li>Work as a developer</li>
+			<li>Leader of the Security Competency group at <a href="http://www.bekk.no">BEKK</a></li>
+			<li><a href="https://www.owasp.org/index.php/Norway">OWASP Norway Chapter</a> lead</li>
+			<li>Member of <a href="http://www.honeynor.no/">Norwegian Honeynet Project</a></li>
+			<li>Above average interest in security</li>
+		</ul>
+        <img src="images/bekk-logo.png" class="bottom-right" style="margin: 10px" />
+	  </article>
+	  
+	  <article>
+		<h3>The need for cross domain communication</h3>
+		<ul class="build">
+			<li>Mashups</li>
+			<li>Reading data from subdomains</li>
+			<li>Reading data from trusted third-parties<br></li>
+		</ul>
+	  </article>
+	  
+	  <article>
+		<h3 style="clear: both;">Frames</h3>
+		<div class="talkFrame floating left">
+			http://domain-a.com<br>
+			<div class="fakeFrame">
+				Hello??
+			</div>
+		</div>
+		<div class="talkFrame floating right">
+			http://domain-b.com<br>
+			<div class="fakeFrame">
+				Sorry... I can't hear you...
+			</div>
+		</div>
+	  </article>
+
+
+	  <article>
+		<h3 style="clear: both;">Frames</h3>
+		<div class="talkFrame floating left">
+			http://domain-a.com<br>
+			<div class="fakeFrame" style="height: 400px; width: 500px;">
+				Hello??
+				<div class="talkFrame floating">
+					http://domain-b.com<br>
+						<div class="fakeFrame">
+							Sorry... I can't hear you...
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	  </article>
+
+	  <article>
+		<h3>Script</h3>
+		<div>
+			JavaScript running on domain-a.com:
+			<pre class="lang-js">$.get("http://domain-b.com/", function(data) { ... });</pre>
+		</div>
+	  </article>
+
+	  
+	  <article style="background-image: url('images/stop-sign1.jpeg')"class="center-picture">
+		<h3>Communication across domains</h3>
+		<div class="build">
+			<div style="background: #000; top: 298px; left: 392px; border: 1px solid black; height: 100px; width: 50px; z-index: 20; position: absolute;"></div>
+		</div>
+	  </article>
+	  
+	  <article>
+		<h3>Same Origin Policy</h3>
+		<br>
+		The communicating parties must have URIs with:
+		<ul class="build">
+			<li>the same protocol</li>
+			<li>the same port number</li>
+			<li>the same host name</li>
+		</ul>
+	  </article>
+	  
+	  <article style="background-image: url(images/cross-domain-proxy.svg)" class="center-left-picture">
+		<h3>Proxying</h3>
+
+	  </article>
+
+	  <article>
+		<h3>Proxying</h3>
+		<br>
+		<div class="build">	
+			<p>Setting up a local proxy on the web server:</p>
+			<pre>$.get("http://domain-a.com/proxy?url=http://domain-b.com", 
+	function(data) { ... }
+);</pre>
+			</code>
+		</div>
+		<ul class="plus build">
+			<li>Browser-support</li>
+			<li>Third-party domains</li>
+			<li>Server-side validation</li>
+		</ul>
+		<ul class="minus build">
+			<li>Cannot reuse existing authentication</li>
+		</ul>
+		<ul class="important build">
+			<li>Whitelist the hostnames allowed for proxying</li>
+		</ul>
+	  </article>
+
+	  <article style="background-image: url(images/cross-domain.svg)" class="center-left-picture">
+
+	  </article>
+
+	  <article>
+		<h3 style="clear: both;">Frames - document.domain</h3>
+		<div class="talkFrame floating left">
+			http://a.example.com<br>
+			<div class="fakeFrame">
+				&lt;script&gt;<br>
+				document.domain = "example.com";<br>
+				...
+			</div>
+		</div>
+		<div class="talkFrame floating right">
+			http://b.example.com<br>
+			<div class="fakeFrame">
+				&lt;script&gt;<br>
+				document.domain = "example.com";<br>
+				...
+			</div>
+		</div>
+		<div style="margin-top: 300px;">
+			<ul class="plus build">
+				<li>Works in all browsers</li>
+			</ul>
+			<ul class="minus build">
+				<li>No support for third-party domains</li>
+				<li>Domain <code>c.example.com</code> can join the party</li>
+			</ul>
+		</div>
+	  </article>
+
+
+
+	  
+	  <article>
+		<h3>SOP Hacks</h3>
+		<ul class="build">
+			<li>FrameElementTransport (FF1-FF2) - <code>frameElement</code></li>
+			<li>NIX (IE6/7) - <code>window.opener</code></li>
+			<li>FIM - Fragment identifier</li>
+			<li>WindowNameTransport - <code>window.name</code></li>
+		</ul>
+		<ul class="minus build">
+			<li>They are hacks - not necessarily future-proof</li>
+			<li>Little or no control over receiver/sender</li>
+		</ul>
+	  </article>
+	  
+	  <article style="background-image: url('images/ibm-fragment.gif')" class="center-picture">
+		<h3>FIM - Fragment identifier</h3>
+		
+		<div class="source">
+			Image from <a href="http://www.ibm.com/developerworks/web/library/wa-crossdomaincomm/index.html">IBM - Improve cross-domain communication with client-side solutions - Work around the SOP restrictions</a>
+		</div>
+	  </article>
+
+	  <article style="background-image: url('images/ibm-windowname.gif')" class="center-picture">
+		<h3>WindowNameTransport</h3>
+		
+		<div class="source">
+			Image from <a href="http://www.ibm.com/developerworks/web/library/wa-crossdomaincomm/index.html">IBM - Improve cross-domain communication with client-side solutions - Work around the SOP restrictions</a>
+		</div>
+	  </article>
+
+
+	  <article>
+		<h3>JSONP - JSON with Padding</h3>
+		<ul class="build">
+			<li>Loading data from third-party through <code>&lt;script&gt;</code>-tag:
+				<pre class="inbetween">&lt;script&gt;
+function setData(data) {
+	//handle data
+}
+&lt;/script&gt;
+&lt;script src="http://domain-b.com/data"&gt;&lt;/script&gt;</pre>
+			</li>
+			<li>The loaded script automatically calls a predefined function delivering the data:
+				<pre class="inbetween">setData({"some":"data", ...});</pre>
+			</li>
+		</ul>
+	  </article>
+	  <article>
+		<h3>JSONP - JSON with Padding</h3>
+		<ul class="build">
+			<li>evil.com:
+				<pre class="inbetween evil">&lt;script&gt;
+function setData(data) {
+  stealData(data);
+}
+&lt;/script&gt;
+&lt;script src="http://domain-b.com/data"&gt;&lt;/script&gt;</pre>
+			</li>
+		</ul>
+	  </article>
+	  <article style="background-image: url(images/sykkel-laas.png)" class="center-picture contrast">
+	  </article>
+
+	  <article>
+		<h3>JSONP - JSON with Padding</h3>
+		<ul class="plus build">
+			<li>Reuse existing authentication/session</li>
+			<li>Easy to setup</li>
+		</ul>
+		<ul class="minus build">
+			<li class="warn"><strong>Not</strong> secure for private data - any site can add the same script tag</li>
+			<li class="warn">It's script - not data  &rarr; trust</li>
+		</ul>
+	  </article>
+	  
+	  <article>
+		<h3>Flash</h3>
+		<ul class="build">
+			<li>Flash can communicate with javascript:
+				<pre class="inbetween">ExternalInterface.call("setData", data);</pre>
+			</li>
+			<li>Flash can make cross domain HTTP requests</li>
+			<li>Policy-based - Data provider must have /crossdomain.xml
+<pre class="inbetween">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;cross-domain-policy&gt;
+  &lt;allow-access-from domain="domain-a.com" /&gt;
+&lt;/cross-domain-policy&gt;</pre>
+			</li>
+		</ul>
+			
+		<ul class="plus build">
+			<li>Works</li>
+		</ul>
+		<ul class="minus build">
+			<li>A bit cumbersome to setup</li>
+			<li>Requires flash - will not work on iOS</li>
+		</ul>
+	  </article>
+
+	  <article style="background-image: url('images/danger.jpg')" class="bottom-right-picture">
+		<h3>Warning - Avoid OPEN crossdomain.xmls</h3>
+		<br>
+		<div class="build">
+<pre class="inbetween">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;cross-domain-policy&gt;
+  &lt;allow-access-from domain="*" /&gt;
+&lt;/cross-domain-policy&gt;</pre>
+			<p class="warn">Allows <em>any</em> flash on <em>any</em> web site to read data on behalf of the current user!</p>
+		</div>
+	  </article>
+
+	  <article>
+	  	<h3>Open crossdomain.xmls</h3>
+	  	<p>Alexa top 100 local domains:</p>
+	  	<table class="graph">
+	  	<tr>
+	  		<td><img src="images/sweden.jpg"></td>
+	  		<td>
+	  			<div class="green" style="width: 180px"></div>
+	  			<div class="red" style="width: 90px"></div>
+	  			27
+	  		</td>
+	  	</tr>
+	  	<tr>
+	  		<td><img src="images/norway.jpg"></td>
+	  		<td>
+	  			<div class="green" style="width: 100px"></div>
+	  			<div class="red" style="width: 200px"></div>
+	  			30
+	  		</td>
+	  	</tr>
+	  	<tr>
+	  		<td><img src="images/denmark.jpg"></td>
+	  		<td>
+	  			<div class="green" style="width: 170px"></div>
+	  			<div class="red" style="width: 140px"></div>
+	  			31
+	  		</td>
+	  	</tr>
+	  	</table>
+		<div class="source">Tested 18. april 2012</div>
+	  </article>
+
+	  <article style="background-image: url('images/danger.jpg')" class="bottom-right-picture">
+		<h3>Java Applet support for crossdomain.xml</h3>
+		<br>
+		<div class="build">
+			<p>Only works with <span class="warn">insecure</span> (open) crossdomain.xmls... sigh...</p>
+			<img src="images/angry.jpg" />
+		</div>
+	  </article>
+	  
+	  <article>
+		<h3>Silverlight</h3>
+		<ul class="build">
+			<li>Can communicate with javascript:
+				<pre class="inbetween">HtmlPage.Window.Invoke("setData", data);</pre>
+			</li>
+			<li>Silverlight can make cross domain HTTP requests</li>
+			<li>Policy-based - uses clientaccesspolicy.xml</li>
+			<li>Fallback to crossdomain.xml</li>
+		</ul>
+		<ul class="plus build">
+			<li>Works</li>
+		</ul>
+		<ul class="minus build">
+			<li>A bit cumbersome to setup</li>
+			<li>Requires Silverlight - limited platform support</li>
+		</ul>
+	  </article>
+
+	  <article>
+		<h3>HTML5 - postMessage</h3>
+		<div class="talkFrame">
+			http://domain-a.com<br>
+			<div class="fakeFrame">
+				&lt;script&gt;
+				<pre class="lessFuzz">
+var targetFrame = document.getElementById("theIframe").contentWindow;
+targetFrame.postMessage(data, "http://domain-b.com");
+</pre>
+			</div>
+		</div>
+		<div class="talkFrame">
+			http://domain-b.com<br>
+			<div class="fakeFrame">
+				&lt;script&gt;
+<pre class="lessFuzz">
+if (window.addEventListener) {
+        window.addEventListener("message", receiveMessage, false);
+} else {
+        window.attachEvent("onmessage", receiveMessage);
+}
+function receiveMessage(event) {
+	if (event.origin !== "http://domain-a.com") { //IMPORTANT: always check origin
+		return;
+	}
+	// handle message
+}</pre>
+			</div>
+		</div>
+		<div class="source">Example: <span class="urlize">http://erlend.oftedal.no/blog/examples/cors/</span></div> 
+	  </article>
+	  
+	  <article>
+		<h3>HTML5 - postMessage</h3>
+		<ul class="plus build">
+			<li>Built for security and SOP - not a hack</li>
+			<li>Supports third-party domains</li>
+		</ul>
+		<ul class="minus build">
+			<li>Support in older browsers</li>
+		</ul>
+		<ul class="important build">
+			<li>Do NOT use <code>*</code> as target for messages</li>
+			<li>Always check origin of message before processing</li>
+		</ul>
+
+		<div class="source urlize">http://erlend.oftedal.no/blog/tools/postmessage/</div>
+	  </article>
+
+	  <article>
+		<h3>Cross domain XHR</h3>
+		<ul class="build">
+			<li>Ajax request towards third-party domains</li>
+			<li>Access to the response controlled by response headers: <code>Access-control-*</code></li>
+		</ul>
+	  </div>
+	  </article>
+	  <article>
+		<h3>Cross domain XHR</h3>
+		<ul class="build">
+			<li>Pattern for:
+				<ul>
+					<li><code>application/x-www-form-urlencoded</code>, <code>multipart/form-data</code>, or <code>text/plain</code></li>
+					<li>no custom headers</li>
+				</ul>
+			</li>
+		</ul>
+		<div class="build communication">
+			
+			<div>domain-a.com:<pre class="lang-xml inbetween">GET http://domain-b.com/some/resource
+...</pre></div>
+			<div class="server">domain-b.com:
+				<pre class="lang-xml inbetween">200 OK
+Access-Control-Allow-Origin: http://domain-a.com
+...</pre>
+			</div>
+		</div>
+	  </article>
+
+	  <article>
+		<h3>Cross domain XHR - preflight</h3>
+		<div class="build communication">
+			<div>domain-a.com:<pre class="lang-xml inbetween">OPTIONS http://domain-b.com/some/resource
+...</pre>
+			</div>
+			<div class="server">domain-b.com:
+				<pre class="lang-xml inbetween">200 OK
+Access-Control-Allow-Origin: http://domain-a.com
+...</pre>
+			</div>
+			<div>domain-a.com:<pre class="lang-xml inbetween">POST http://domain-b.com/some/resource
+Content-Type: application/json
+...</pre></div>
+			<div class="server">domain-b.com:
+				<pre class="lang-xml inbetween">200 OK
+Access-Control-Allow-Origin: http://domain-a.com
+...</pre>
+			</div>
+		</div>
+	  </article>
+
+	  <article>
+		<h3>Cross domain XHR - more headers</h3>
+		<ul class="build headers">
+			<li>Allowed verbs:<br>
+				<code>Access-Control-Request-Method: POST</code><br>
+				<code>Access-Control-Allow-Methods: POST, GET, OPTIONS</code></li>
+			<li>Allowed custom headers:<br>
+				<code>Access-Control-Request-Headers: X-PINGOTHER</code><br>
+				<code>Access-Control-Allow-Headers: X-PINGOTHER</code></li>
+			<li>For how long can the client cache the preflight:<br>
+				<code>Access-Control-Max-Age: 1728000</code></li>
+			<li>Is the client allowed to include credentials (authentication cookies etc.):<br>
+				<code>Access-Control-Allow-Credentials: true</code></li>
+		</ul>
+	  </article>
+
+	  
+	  <article>
+		<h3>Cross domain XHR</h3>
+		<ul class="plus build">
+			<li>Built for security and SOP - not a hack</li>
+			<li>Supports third-party domains</li>
+		</ul>
+		<ul class="minus build">
+			<li>Support in older browsers</li>
+		</ul>
+		<ul class="important build">
+			<li class="warn">Do <em>NOT</em> use for private data:<br>
+				<code>Access-control-allow-origin: * </code><br>
+				<code> Access-control-allow-credentials: true </code>
+			</li>
+			<li class="urlize">http://www.shodanhq.com/search?q=%22access-control-allow-credentials%3A+true%22+AND+%22access-control-allow-origin%3A+%22</a>
+		</ul>
+	  </article>
+
+	  <article>
+		<h3>Cross domain XHR</h3>
+		<ul class="build">
+			<li class="urlize">http://blog.kotowicz.net/2011/04/how-to-upload-arbitrary-file-contents.html</li>
+			<pre class="inbetween">
+function fileUpload(url, fileData, fileName) {
+   var fileSize = fileData.length,
+     boundary = "xxxxxxxxx",
+     xhr = new XMLHttpRequest();
+   xhr.open("POST", url, true);
+   xhr.setRequestHeader("Content-Type", 
+	"multipart/form-data, boundary="+boundary);
+   xhr.setRequestHeader("Content-Length", fileSize);
+   var body = "--" + boundary + "\r\n";
+   body += 'Content-Disposition: form-data; name="contents";" + 
+		"filename="' + fileName + '"\r\n';
+   body += "Content-Type: application/octet-stream\r\n\r\n";
+   body += fileData + "\r\n";
+   body += "--" + boundary + "--";
+   xhr.send(body);
+}</pre>
+		</ul>
+	  </article>
+	  
+	  <article>
+		<h3>XDomainRequest</h3>
+		<ul class="build">
+			<li>Reuses the <code>Access-control-allow-origin</code>-header</li>
+		<pre class="inbetween">var xdr = new XDomainRequest(); 
+xdr.open("get", "http://domain-b.com/some/resource");
+xdr.send();</pre>
+		</ul>
+		<ul class="plus build">
+			<li>Built for security and SOP - not a hack</li>
+			<li>Supports third-party domains</li>
+		</ul>
+		<ul class="minus build">
+			<li>IE-only</li>
+			<li>Text/plain and no custom headers</li>
+			<li>No authentication cookie reuse</li>
+		</ul>
+	  </article>
+	  
+	  <article>
+		<h3>WebSockets</h3>
+		<ul class="build">
+			<li>Establish socket between server and browser from javascript</li>
+			<li>Socket is established using HTTP</li>
+		</ul>
+		<ul class="plus build">
+			<li>Server push</li>
+			<li>Third-party domains</li>
+		</ul>
+		<ul class="minus build">
+			<li>New browsers only</li>
+		</ul>
+		<ul class="important build">
+			<li>Keeps connection open</li>
+			<li>First version found to be flawed security-wise</li>
+		</li>
+	  </article>
+	  
+	  <article>
+		<h3>easyXDM</h3>
+		<ul class="build">
+			<li class="urlize">http://easyxdm.net/wp/</li>
+			<li>Abstraction over message transports</li>
+		</ul>
+		<ul class="plus build">
+			<li>Works in all browsers</li>
+		</ul>
+		<ul class="minus build">
+			<li>Uses hacks in older browsers</li>
+		</ul>
+	  </article>
+	  
+	  
+	  
+	  
+	  <article>
+		<h1>New browser security features</h1>
+	  </article>
+
+	  <article>
+		<h3>CSP - Content Security Policy</h3>
+		<ul class="build">
+			<li>First implemented in Firefox</li>
+			<li>Later supported also in Chrome</li>
+			<li>Now a <a href="http://dvcs.w3.org/hg/content-security-policy/raw-file/tip/csp-specification.dev.html">w3c standard</a></li>
+		</ul>
+		<ul class="build">
+			<li>Server instructs browser</li>
+			<li>Header based: <code>Content-Security-Policy</code></li>
+			<li>Can use <code>&lt;meta http-equiv="Content-Security-Policy" content=""&gt;</code></li>
+			<li>Firefox: <code>X-Content-Security-Policy</code></li>
+			<li>Chrome: <code>X-Webkit-CSP</code></li>
+		</ul>
+	  </article>
+	  
+	  <article>
+		<h3>CSP - Directives</h3>
+		<pre style="font-size: 45%" class="lang-xml">Content-Security-Policy: default-src *; script-src 'self' *.google.com https://www.owasp.org:443</pre>
+		<ul class="build">
+				
+			<li><code>default-src</code> - the default</li>
+			<li><code>script-src</code> - javascript</li>
+			<li><code>object-src</code> - flash, java etc.</li>
+			<li><code>style-src</code> - stylesheets (CSS)</li>
+			<li><code>img-src</code> - pictures</li>
+			<li><code>media-src</code> - video and audio</li>
+			<li><code>frame-src</code> - iframes</li>
+			<li><code>font-src</code> - fonts</li>
+			<li><code>connect-src</code> - websockets, xhr-requests</li>
+		</ul>
+	  </article>
+	  <article>
+		<h3>CSP - special sources</h3>
+		<ul class="build">
+			<li><code>'self'</code> - same origin as website</li>
+			<li><code>'none'</code> - no sources allowed</li>
+			<li><code>'unsafe-inline'</code>
+				<ul class="sub">
+					<li>valid for <code>style-src</code> and <code>script-src</code></li>
+					<li>allows inline script tags and event handlers in the page</li>
+					<li>disables a major defense against reflected and persisted XSS</li>
+				</ul>
+			</li>
+			<li><code>'unsafe-eval'</code>
+				<ul class="sub">
+					<li>valid for <code>script-src</code></li>
+					<li>allows <code>eval()</code>,<code>setTimeout()</code> and <code>Function()</code></li>
+					<li>disables a defense against one kind of DOM-based XSS</li>
+				</ul>
+			</li>
+		</ul>
+	  </article>
+	  
+	  <article>
+		<h3>CSP - support</h3>
+		<ul class="build">
+			<li class="urlize">http://erlend.oftedal.no/blog/csp/readiness/</li>
+			<li>Chrome - 100%</li>
+			<li>Firefox - <code>'unsafe-inline'</code> and <code>'unsafe-eval'</code> ++ does not work</li>
+		</ul>
+		<ul class="build">
+			<li class="urlize">http://code.google.com/p/chromium/issues/detail?id=93196</li>
+		</ul>
+		<ul class="build">
+			<li>Actual header name in the spec is <code>Content-Security-Policy</code> but no browser yet supports it</li>
+		</ul>
+	  </article>
+	  
+	  <article>
+		<h3>CSP - reporting</h3>
+		<ul class="build">
+			<li><code>report-uri</code> - this directive instructs browser to send a json report when content conflicts with the given CSP</li>
+			<li><code>X-Content-Security-Policy<b>-Report-Only</b></code> - no actual blocking - just reporting</li>
+		</ul>
+	  </article>
+
+	  <article>
+	  	<h3>CSP - is it being used</h3>
+	  	<ul class="build">
+	  		<li class="urlize">http://www.shodanhq.com/search?q=x-content-security-policy</li>
+	  		<li class="urlize">http://www.shodanhq.com/search?q=x-webkit-csp</li>
+	  	</ul>
+	  </article>
+
+	  <article>
+	  	<img src="images/angrep_kombinert_2.png" />
+	  </article>
+
+	  
+	  <article>
+		<h3>HSTS - Strict Transport Security</h3>
+		<ul class="build">
+			<pre class="lang-xml">Strict-Transport-Security: max-age=14400</pre>
+			<pre class="lang-xml">Strict-Transport-Security: max-age=14400; includeSubDomains</pre>
+			<li>If received over https, the browser will always use https regardless of URLs for the given number of seconds</li>
+			<li>Supported in Chrome, FF4+, </li>
+		</ul>
+		<ul class="build">
+			<li class="urlize">http://erlend.oftedal.no/blog/tools/hsts/</li>
+		</ul>
+	  </article>
+
+	  <article>
+		<h3>X-Frame-Options</h3>
+		<ul class="build">
+			<li>Clickjacking defense</li>
+			<li>Policy for whether a website can appear within an iframe</li>
+			<pre class="lang-xml">X-Frame-Options: deny</pre>
+			<pre class="lang-xml">X-Frame-Options: sameorigin</pre>
+			<pre class="lang-xml">X-Frame-Options: allow-from http://erlend.oftedal.no</pre>
+			<li>Supported in IE8+, Chrome, Firefox, Safari, Opera</li>
+		</ul>
+		<ul class="build">
+			<li class="urlize">http://erlend.oftedal.no/blog/tools/xframeoptions/</li>
+		</ul>
+	  </article>
+
+	  <article>
+		<h3>Iframe sandboxing</h3>
+		<ul class="build">
+			<pre class="lang-xml inbetween">&lt;iframe sandbox src="..." &gt;&lt;/iframe&gt;</pre>
+			<pre class="lang-xml inbetween">&lt;iframe sandbox="allow-scripts" src="..." &gt;&lt;/iframe&gt;</pre>
+		</ul>
+		<ul class="build">
+			<li><code>Sandbox</code>-directives:
+				<ul>
+					<li><code>Allow-scripts</code></li>
+					<li><code>Allow-sameorigin</code></li>
+					<li><code>Allow-top-navigation</code></li>
+					<li><code>Allow-forms</code></li>
+				</ul>
+			</li>
+			<li>IE-only:<pre class="lang-xml inbetween">&lt;iframe security="restricted" src="..." &gt;&lt;/iframe&gt;</pre></li>
+		</ul>
+		<ul class="build">
+			<li class="urlize">http://erlend.oftedal.no/blog/tools/iframe/</li>
+		</ul>
+	  </article>
+
+	  <article>
+		<h3>X-Content-Type-Options</h3>
+		<ul class="build">
+			<pre class="lang-xml inbetween">X-Content-Type-Options: nosniff</pre>
+			<li>Asks browser to stop guessing the content type</li>
+		</ul>
+	  </article>
+	  
+	  
+	  <article>
+		<h3>XSS-filtering</h3>
+		<ul class="build">
+			<li>Introduced in IE8</li>
+			<li>Later supported in Chrome</li>
+			<li>Checks if an attack from a URL parameter is reflected in the page</li>
+			<li>Only a defense against reflected XSS attacks and simple DOM-based XSS</li>
+		</ul>
+		<ul class="build">
+			<li>Weird false positives - IE8 could not load <code>http://www.google.com/search?q=&lt;script&gt;</code></li>
+		</ul>
+	  </article>
+	  
+	  <article style="text-align: center">
+		<img src="images/tangled-web.png" style="height: 100%;" />
+	  </article>
+	  
+	 <article style="position: relative">
+		<q class="question">Questions?</q>
+		<ul style="position: absolute; bottom: 100px; right: 60px;">
+			<li>Erlend Oftedal - <a href="http://www.twitter.com/webtonull">@webtonull</a></li>
+			<li>erlend@oftedal.no</li>
+		</ul>
+	 </article>
+
+	 <article style="visibility: hidden">
+	 
+	 </article>
+	 
+	<article>
+		<h3>MalaRIA</h3>
+		<ul class="build">
+			<li>Malicious and Rich Internet Application</li>
+			<li>Exploits insecure crossdomain.xmls</li>
+			<li>Uses a malicioius client side flash or silverlight application on a web page</li>
+			<li>Attacker can use the victims browser as a proxy and surf using the victims session</li>
+		</ul>
+		<ul class="build">
+			<li class="urlize">http://erlend.oftedal.no/blog/?id=107</li>
+		</ul>
+	</article> 
+
+	<article style="background-image: url(images/malaria.svg)" class="center-picture">
+		<h3>MalaRIA</h3>
+	</article>
+
+	<article>
+		<h3>MalaRIA</h3>
+
+		<p>Demo: <div class="urlize">http://www.youtube.com/watch?v=_2U7XAuJ6hk</div></p>
+	</article>
+
+	<article>
+		<h3>HTML5 = MalaRIA + CORS</h3>
+		<ul class="build">
+			<li>Extension to MalaRIA</li>
+			<li>Exploits <code>Access-Control-Allow-Origin: *</code></li>
+			<li>Uses websockets to connect back to proxy</li>
+		</ul>
+		<ul class="build">
+			<li class="urlize">http://koto.github.com/cors-proxy-browser/malaria.html</li>
+		</ul>
+	</article> 
+
+	
+  </body>
+</html>
+
